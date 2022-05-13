@@ -1,0 +1,27 @@
+- name: Create BIG-IP guest in VMware
+  hosts: esxi
+  gather_facts: false
+  connection: local
+  vars:
+    ansible_python_interpreter: /bin/python3
+  tasks:
+    - name: Create a virtual machine from a template
+      vmware_guest:
+        hostname: vcsa01.hutton.lab
+        username: administrator@hutton.lab
+        password: Emca/1449/
+        name: test_vm_0001
+        folder: /hutton-Datacenter/vm/
+        datacenter: hutton-Datacenter
+        validate_certs: no
+        state: poweredon
+        template: big-ip-template
+        networks:
+        - name: VM Network
+          ip: 192.168.1.230
+          netmask: 255.255.255.0
+          gateway: 192.168.1.1
+          mac: aa:bb:dd:aa:00:14
+          domain: hutton.lab
+          dns_servers:
+          - 192.168.0.42

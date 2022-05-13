@@ -1,0 +1,17 @@
+---
+#All modules requires API write access and hence is not supported on a free ESXi license.
+- name: Create BIG-IP guest in VMware
+  hosts: esxi
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: deploy ova
+      community.vmware.vmware_deploy_ovf:  
+        hostname: 192.168.0.200 #vcsa01.hutton.lab
+        username: administrator@hutton.lab
+        password: Emca/1449/
+        datacenter: hutton-Datacenter
+        ovf: BIGIP-15.1.2.1-0.0.10.ALL-vmware.ova
+        wait_for_ip_address: true
+        validate_certs: no
+      delegate_to: localhost

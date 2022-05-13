@@ -1,0 +1,5 @@
+---
+- name: deploy A
+  import_playbook: f5-build.yaml
+- name: deploy B
+  import_playbook: check-vm.yaml
