@@ -1,0 +1,5 @@
+---
+- name: deploy A
+  import_playbook: config-network.yaml
+- name: deploy B
+  import_playbook: HA.yaml

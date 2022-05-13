@@ -1,0 +1,91 @@
+---
+#All modules requires API write access and hence is not supported on a free ESXi license.
+- name: Create BIG-IP guest in VMware
+  hosts: big-01
+  gather_facts: false
+  connection: local
+  vars:
+    ansible_python_interpreter: /bin/python3
+  tasks:
+  - set_fact:
+     provider:
+      server: 192.168.0.58
+      user: root
+      password: Emca/1449/
+      server_port: 443
+      validate_certs: no
+
+#Step 1: Create dedicated VLAN and Self IP for HA:
+  - name: Add HA VLAN(s)
+    bigip_vlan:
+      provider: "{{provider}}"
+      name: "{{item.name}}"
+      untagged_interfaces:
+      - "{{item.interface}}"
+    loop: "{{ha_vlan_information}}"
+
+  - name: Add HA SELF-IP(s)
+    bigip_selfip:
+     provider: "{{provider}}"
+     name: "{{item.name}}"
+     address: "{{item.address}}"
+     netmask: "{{item.netmask}}"
+     vlan: "{{item.vlan}}"
+    loop: "{{ ha_selfip }}"
+
+
+#Step 2: Configure 'config sync':
+  - name: Config Sync/unicast
+    bigip_device_connectivity:
+      provider: "{{provider}}"
+      config_sync_ip: "{{ha_selfip[0]['address']}}"
+      unicast_failover:
+      - address: "{{ha_selfip[0]['address']}}"
+      - address: "{{inventory_hostname}}"
+
+##Step 3: Configure 'Failover' communication:
+  - name: Device trust
+    bigip_device_trust:
+      provider: "{{provider}}"
+      peer_server: "{{ peer_server }}"
+      peer_hostname: "{{ peer_hostname }}"
+      peer_user: "{{ peer_user }}"
+      peer_password: "{{ peer_password }}"
+     
+  - pause:
+      seconds: 30
+      
+#Step 4. Establish Device Trust:      
+  - name: Add Device Group
+    bigip_device_group:
+      provider: "{{provider}}"
+      name: "deviceGrp"
+      auto_sync: yes
+      type: "sync-failover"
+
+  - pause:
+      seconds: 30
+      
+  - name: Add members to the device group
+    bigip_device_group_member:
+      provider: "{{provider}}"
+      device_group: "deviceGrp"
+      name: "{{ item }}"
+      #validate_certs: False
+    loop:
+      - "{{hostname}}"
+      - "{{peer_hostname}}"
+
+  - pause:
+      seconds: 10
+
+#Step 7: Configure Network mirroring (Connection mirroring):       
+  - name: Perform a config sync
+    bigip_configsync_action:
+      provider: "{{provider}}"
+      device_group: "deviceGrp"
+      sync_device_to_group: "yes"
+
+
+#Step 5: Create Sync-Failover device group:
+#Step 6: Sync configuration to the device group:

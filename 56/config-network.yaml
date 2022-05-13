@@ -1,0 +1,50 @@
+- name: Create BIG-IP guest in VMware
+  hosts: big-01
+  gather_facts: false
+  connection: local
+  vars:
+    ansible_python_interpreter: /bin/python3
+
+  tasks:
+  - set_fact:
+     provider:
+      server: 192.168.0.58
+      user: root
+      password: Emca/1449/
+      server_port: 443
+      validate_certs: no
+
+  - name: Set the hostname of the BIG-IP
+    bigip_hostname:
+      hostname: BIG-IP-001.hutton.lab #"{{hostname}}"
+      provider: "{{provider}}"
+    delegate_to: localhost
+
+  - name: Add VLAN(s)
+    bigip_vlan:
+      provider: "{{provider}}"
+      name: "{{item.name}}"
+      untagged_interfaces:
+      - "{{item.interface}}"
+    loop: "{{vlan_information}}"
+  
+  - name: Add SELF-IP(s)
+    bigip_selfip:
+     provider: "{{provider}}"
+     name: "{{item.name}}"
+     address: "{{item.address}}"
+     netmask: "{{item.netmask}}"
+     vlan: "{{item.vlan}}"
+    loop: "{{ selfip_information }}"
+
+  - name: Add Floating SELF-IP(s)
+    bigip_selfip:
+     provider: "{{provider}}"
+     name: "{{item.name}}"
+     address: "{{item.address}}"
+     netmask: "{{item.netmask}}"
+     vlan: "{{item.vlan}}"
+     traffic_group: "traffic-group-1"
+    loop: "{{ floating_selfip_information }}"
+    loop_control:
+      pause: 5  
